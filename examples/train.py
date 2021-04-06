@@ -108,8 +108,8 @@ def train(conf, config, sofa):
                 print("loss:%.3e" % (np.mean(losses)), flush=True)
                 begin_time = time()
                 rl.save_model()
-    if (epoch + 1) % 100 == 0:
-        print("Till epoch %d, the trick-1 works for %d times" % (epoch+1, trick1_happen))
+    # if (epoch + 1) % 100 == 0:
+    #     print("Till epoch %d, the trick-1 works for %d times" % (epoch+1, trick1_happen))
 
     plot_cumuReward(learnstep_cr, filename, plot_data_file)
     print("plot save into file:%s" % filename)
