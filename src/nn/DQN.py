@@ -4,9 +4,12 @@ Goal: DQN
 Following https://www.zhihu.com/people/fuckyou-74/posts
 '''
 
+import sys
+# sys.path.append('./')
+from nn.state_encoder.state_encoder import MLP, GRU
+
 import numpy as np
 import tensorflow as tf
-# np.random.seed(2020)
 
 class DQN_R(object):
     def __init__(self, config):
@@ -101,6 +104,33 @@ class DQN_R(object):
             self.action_embeddings = tf.concat([self.action_embeddings, init_user_vec], axis=0)
         self.feedback_embeddings = tf.concat([self.feedback_embeddings, tf.constant(np.ones([1, self.action_dim]), dtype='float32')], axis=0)
 
+        '''
+        Use state encoder class
+        '''
+        # --------- get the feedback embeddings [B L D]
+        self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, f)
+        self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, f_)
+        # --------- get the items embeddings [B L D]
+        self.input_s = tf.nn.embedding_lookup(self.action_embeddings, s)
+        self.input_s_ = tf.nn.embedding_lookup(self.action_embeddings, s_)
+        config = {}
+        if self.state_encoder.lower() == 'mlp':
+            state_encoder = MLP
+            print("1-layer MLP, 1st layer is activated by relu")
+        elif self.state_encoder.lower() == 'gru':
+            state_encoder = GRU
+            config['rnn_state_dim'] = self.rnn_state_dim
+            print("1-layer GRU and 1-layer dense")
+
+        # #
+        # ----- build MainNet -----
+        with tf.variable_scope('MainNet'):
+            self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
+        # ----- build TargetNet -----
+        with tf.variable_scope('TargetNet'):
+            self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s, name='t2')
+
+        '''
         # --------- get the feedback embeddings
         self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f, [-1]))
         self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f_, [-1]))
@@ -132,7 +162,6 @@ class DQN_R(object):
             # h_s_ = tf.contrib.layers.flatten(self.input_s_)
             # ----- build MainNet -----
             with tf.variable_scope('MainNet'):
-                # layer_h_s = tf.layers.dense(h_s, 1024, activation=tf.nn.relu, kernel_initializer=w_init, bias_initializer=b_init, name='q_l1')
                 self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=w_init, bias_initializer=b_init, name='q')
             # ----- build TargetNet -----
             with tf.variable_scope('TargetNet'):
@@ -142,6 +171,7 @@ class DQN_R(object):
         else:
             print("error state_encoder")
             exit(1)
+        '''
         
         # ----- DQN-loss ----- 
         with tf.variable_scope('q_eval'):
@@ -347,6 +377,9 @@ class DQN_R(object):
     def learn(self):
         if self.memory_counter < self.batch_size:
             return
+        # check if change TargetNet params or not
+        if self.learn_step_counter % self.replace_TargetNet_iter == 0: # at first, behavior and target net are same.
+            self.sess.run(self.target_replace_op)
         # get batch memory
         if self.memory_counter > self.memory_size:
             sample_index = np.random.choice(self.memory_size, size=self.batch_size)
@@ -389,9 +422,6 @@ class DQN_R(object):
         # loss = np.mean(loss)
 
         self.learn_step_counter += 1
-        # check if change TargetNet params or not
-        if self.learn_step_counter % self.replace_TargetNet_iter == 0:
-            self.sess.run(self.target_replace_op)
         if self.learn_step_counter % self.lr_decay_step == 0:
             self.lr_decay()
         return loss

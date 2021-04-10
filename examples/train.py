@@ -44,7 +44,7 @@ def train(conf, config, sofa):
     # print("********** After removing clicks < 4, we have %d users" % (users.shape[0]))
 
     step = 0
-    batch_size = 50
+    batch_size = 10 # 
     epoch = 3000
     trick1_happen = 0
     for epoch in range(epoch):
