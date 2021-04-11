@@ -42,7 +42,7 @@ class GRU(AbstractStateEncoder):
 
     def call(self, input_s, input_f, len_s, name='net'):
         input_state = input_s * input_f
-        cell_main = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim)
-        _, h_s = tf.nn.dynamic_rnn(cell_main, dtype=tf.float32, sequence_length=len_s, inputs=input_state)
+        cell = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim)
+        _, h_s = tf.nn.dynamic_rnn(cell, dtype=tf.float32, sequence_length=len_s, inputs=input_state)
         output = tf.layers.dense(h_s, self.action_space, name=name)
         return output

@@ -75,7 +75,9 @@ def _logging_(basis_conf, params_conf):
 
 def run_dqn():
     conf = _get_conf('yahoo')
+    # # simulated data: 
     # conf['RATINGS'], item_vec = simulated_data(10, 20)
+    # conf["data.input.dataset"] = 'sim_u10_i20'
 
     # item_vec = conf["ITEM_VEC"]
     sofa = SOFAEnv(conf)
@@ -87,7 +89,7 @@ def run_dqn():
     config['STATE_MAXLENGTH'] = int(conf["episode_length"])
     config['ACTION_SPACE'] = action_space
 
-    config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + \
+    config['SAVE_MODEL_FILE'] = 'newcode-' + conf["data.input.dataset"] + '_' + \
         conf["data.gen_model"] + '_' + conf["data.debiasing"] + '_' + \
         conf['mode'] + '_' + config["state_encoder"] + '_' + 'r-12_SmoothL1_' + 'nohuman' + "_seed" + conf["seed"]
 

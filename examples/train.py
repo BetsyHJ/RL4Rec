@@ -25,6 +25,8 @@ def train(conf, config, sofa):
 
     filename = './learning_curves/' + config['SAVE_MODEL_FILE'] + 'plot.pdf'
     plot_data_file = './learning_curves/' + config['SAVE_MODEL_FILE'] + 'plot.data'
+    if not os.path.exists('./learning_curves/'):
+        os.makedirs('./learning_curves/') 
 
     users = np.arange(num_users, dtype=int)
     testuser_only = False

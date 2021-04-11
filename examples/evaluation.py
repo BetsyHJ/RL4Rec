@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import os
 
 import scipy.sparse as sp
 from nn.DQN import DQN_R
@@ -72,6 +73,8 @@ def evaluate(conf, config, sofa, testfile=None):
     avg_cumuC_turn = np.concatenate([np.arange(sofa.episode_length).reshape((-1, 1))+1, avg_cumuC_turn.reshape((-1, 1))], axis=1)
 
     filename = './result/' + config['SAVE_MODEL_FILE'] + '_eval.txt'  # '_eval.txt'
+    if not os.path.exists('./result/'):
+        os.makedirs('./result/') 
     print("save into file", filename)
     # np.savetxt(filename, np.array(avg_cumulativeReward))
     np.savetxt(filename, np.array(avg_cumuC_turn))
