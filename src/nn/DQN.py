@@ -10,6 +10,7 @@ from nn.state_encoder.state_encoder import MLP, GRU
 
 import numpy as np
 import tensorflow as tf
+# tf.compat.v1.disable_eager_execution()
 
 class DQN_R(object):
     def __init__(self, config):
@@ -56,7 +57,7 @@ class DQN_R(object):
         gpu_options = tf.GPUOptions(allow_growth=True)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.sess.run(tf.global_variables_initializer())
-        # tensorboard --logdir ./log/logs/ --host=127.0.0.1
+        # tensorboard --logdir ./logs/ --host=127.0.0.1
         # self.writer = tf.summary.FileWriter("log/logs/", self.sess.graph)
         # exit(0)
         self.saver = tf.train.Saver()
@@ -94,83 +95,89 @@ class DQN_R(object):
         if self.action_feature is not None:
             self.action_embeddings = tf.constant(dtype=tf.float32, value=self.action_feature)
         else:
-            self.action_embeddings = tf.Variable(tf.random_normal(shape=[self.action_space, self.action_dim], mean=0.0, stddev=0.01), name='action_embeddings', dtype=tf.float32)
+            self.action_embeddings = tf.Variable(tf.random_normal(shape=[self.action_space, self.action_dim], mean=0.0, stddev=0.01, seed=np.random.randint(4096)), name='action_embeddings', dtype=tf.float32)
         # deal with the masked item:
         self.action_embeddings = tf.concat([self.action_embeddings, tf.constant(np.zeros([1, self.action_dim]), dtype='float32')], axis=0)
-        self.feedback_embeddings = tf.Variable(tf.random_normal(shape=[self.num_reward_type, self.action_dim], mean=0.0, stddev=0.01), name='feedback_embeddings', dtype=tf.float32)
+        self.feedback_embeddings = tf.Variable(tf.random_normal(shape=[self.num_reward_type, self.action_dim], mean=0.0, stddev=0.01, seed=np.random.randint(4096)), name='feedback_embeddings', dtype=tf.float32)
         # for initial user embedding, shared by all the users
         if self.with_userinit:
-            init_user_vec = tf.Variable(tf.random_normal(shape=[1, self.action_dim], mean=0.0, stddev=0.01), name='init_user_vec', dtype=tf.float32)
+            init_user_vec = tf.Variable(tf.random_normal(shape=[1, self.action_dim], mean=0.0, stddev=0.01, seed=np.random.randint(4096)), name='init_user_vec', dtype=tf.float32)
             self.action_embeddings = tf.concat([self.action_embeddings, init_user_vec], axis=0)
         self.feedback_embeddings = tf.concat([self.feedback_embeddings, tf.constant(np.ones([1, self.action_dim]), dtype='float32')], axis=0)
 
-        '''
-        Use state encoder class
-        '''
-        # --------- get the feedback embeddings [B L D]
-        self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, f)
-        self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, f_)
-        # --------- get the items embeddings [B L D]
-        self.input_s = tf.nn.embedding_lookup(self.action_embeddings, s)
-        self.input_s_ = tf.nn.embedding_lookup(self.action_embeddings, s_)
-        config = {}
-        if self.state_encoder.lower() == 'mlp':
-            state_encoder = MLP
-            print("1-layer MLP, 1st layer is activated by relu")
-        elif self.state_encoder.lower() == 'gru':
-            state_encoder = GRU
-            config['rnn_state_dim'] = self.rnn_state_dim
-            print("1-layer GRU and 1-layer dense")
+        newcode = True
+        # newcode = False
+        if newcode:
+            print("Use new code")
+            '''
+            Use state encoder class
+            '''
+            # --------- get the feedback embeddings [B L D]
+            self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, f)
+            self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, f_)
+            # --------- get the items embeddings [B L D]
+            self.input_s = tf.nn.embedding_lookup(self.action_embeddings, s)
+            self.input_s_ = tf.nn.embedding_lookup(self.action_embeddings, s_)
+            self.eee = self.input_s * self.input_f
+            config = {}
+            if self.state_encoder.lower() == 'mlp':
+                state_encoder = MLP
+                print("1-layer MLP, 1st layer is activated by relu")
+            elif self.state_encoder.lower() == 'gru':
+                state_encoder = GRU
+                config['rnn_state_dim'] = self.rnn_state_dim
+                print("1-layer GRU and 1-layer dense")
 
-        # #
-        # ----- build MainNet -----
-        with tf.variable_scope('MainNet'):
-            self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
-        # ----- build TargetNet -----
-        with tf.variable_scope('TargetNet'):
-            self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, name='t2')
-
+            # #
+            # ----- build MainNet -----
+            with tf.variable_scope('MainNet'):
+                self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
+            # ----- build TargetNet -----
+            with tf.variable_scope('TargetNet'):
+                self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, name='t2')
         
-        # # --------- get the feedback embeddings
-        # self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f, [-1]))
-        # self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f_, [-1]))
-        # # -------- be careful: here merge the state (items) with feedback_emb
-        # self.input_s = tf.reshape(tf.nn.embedding_lookup(self.action_embeddings, tf.reshape(s, [-1])) * self.input_f, [-1, self.state_maxlength, self.action_dim]) #(None, d) -> (None, s_lengh, d)
-        # self.input_s_ = tf.reshape(tf.nn.embedding_lookup(self.action_embeddings, tf.reshape(s_, [-1])) * self.input_f_, [-1, self.state_maxlength, self.action_dim]) #(None, d) -> (None, s_lengh, d)
+        else:
+            print("Use old code")
+            # --------- get the feedback embeddings
+            self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f, [-1]))
+            self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f_, [-1]))
+            # -------- be careful: here merge the state (items) with feedback_emb
+            self.input_s = tf.reshape(tf.nn.embedding_lookup(self.action_embeddings, tf.reshape(s, [-1])) * self.input_f, [-1, self.state_maxlength, self.action_dim]) #(None, d) -> (None, s_lengh, d)
+            self.input_s_ = tf.reshape(tf.nn.embedding_lookup(self.action_embeddings, tf.reshape(s_, [-1])) * self.input_f_, [-1, self.state_maxlength, self.action_dim]) #(None, d) -> (None, s_lengh, d)
+            self.eee = self.input_s
+            # # ********* here we use rnn, it can be MLP, CNN ....
+            if self.state_encoder.lower() == 'gru':
+                # w_init, b_init = tf.random_normal_initializer(seed=np.random.randint(4096)), tf.constant_initializer()
+                # ----- build MainNet -----
+                with tf.variable_scope('MainNet'):
+                    cell_main = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer())
+                    _, h_s = tf.nn.dynamic_rnn(cell_main, dtype=tf.float32, sequence_length=len_s, inputs=self.input_s)
+                    self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='q')
+                # ----- build TargetNet -----
+                with tf.variable_scope('TargetNet'):
+                    cell_target = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer())
+                    _, h_s_ = tf.nn.dynamic_rnn(cell_target, dtype=tf.float32, sequence_length=len_s_, inputs=self.input_s_)
+                    self.q_next = tf.layers.dense(h_s_, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='t2')
 
-        # # # ********* here we use rnn, it can be MLP, CNN ....
-        # if self.state_encoder.lower() == 'gru':
-        #     w_init, b_init = tf.random_normal_initializer(), tf.constant_initializer()
-        #     # ----- build MainNet -----
-        #     with tf.variable_scope('MainNet'):
-        #         cell_main = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim)
-        #         _, h_s = tf.nn.dynamic_rnn(cell_main, dtype=tf.float32, sequence_length=len_s, inputs=self.input_s)
-        #         self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=w_init, bias_initializer=b_init, name='q')
-        #     # ----- build TargetNet -----
-        #     with tf.variable_scope('TargetNet'):
-        #         cell_target = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim)
-        #         _, h_s_ = tf.nn.dynamic_rnn(cell_target, dtype=tf.float32, sequence_length=len_s_, inputs=self.input_s_)
-        #         self.q_next = tf.layers.dense(h_s_, self.action_space, kernel_initializer=w_init, bias_initializer=b_init, name='t2')
-
-        # # ********* here we use multi-layer dense
-        # elif self.state_encoder.lower() == 'mlp':
-        #     w_init, b_init = tf.random_normal_initializer(), tf.constant_initializer()
-        #     # before the code is h_s = tf.reduce_mean(self.input_s, axis=1)
-        #     h_s = tf.reduce_sum(self.input_s, axis=1) / tf.reshape(tf.cast(self.len_s, dtype=tf.float32), [-1, 1]) # (None, d)
-        #     h_s_ = tf.reduce_sum(self.input_s_, axis=1) / tf.reshape(tf.cast(self.len_s_, dtype=tf.float32), [-1, 1]) # (None, d)
-        #     # h_s = tf.contrib.layers.flatten(self.input_s)
-        #     # h_s_ = tf.contrib.layers.flatten(self.input_s_)
-        #     # ----- build MainNet -----
-        #     with tf.variable_scope('MainNet'):
-        #         self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=w_init, bias_initializer=b_init, name='q')
-        #     # ----- build TargetNet -----
-        #     with tf.variable_scope('TargetNet'):
-        #         # layer_h_s_ = tf.layers.dense(h_s_, 1024, activation=tf.nn.relu, kernel_initializer=tf.zeros_initializer, bias_initializer=tf.zeros_initializer, name='t2_l1')
-        #         self.q_next = tf.layers.dense(h_s_, self.action_space, kernel_initializer=tf.zeros_initializer, bias_initializer=tf.zeros_initializer, name='t2')
-        #     print("2-layer MLP, 1st layer is activated by relu", flush=True)
-        # else:
-        #     print("error state_encoder")
-        #     exit(1)
+            # ********* here we use multi-layer dense
+            elif self.state_encoder.lower() == 'mlp':
+                # w_init, b_init = tf.random_normal_initializer(seed=np.random.randint(4096)), tf.constant_initializer()
+                # before the code is h_s = tf.reduce_mean(self.input_s, axis=1)
+                h_s = tf.reduce_sum(self.input_s, axis=1) / tf.reshape(tf.cast(self.len_s, dtype=tf.float32), [-1, 1]) # (None, d)
+                h_s_ = tf.reduce_sum(self.input_s_, axis=1) / tf.reshape(tf.cast(self.len_s_, dtype=tf.float32), [-1, 1]) # (None, d)
+                # h_s = tf.contrib.layers.flatten(self.input_s)
+                # h_s_ = tf.contrib.layers.flatten(self.input_s_)
+                # ----- build MainNet -----
+                with tf.variable_scope('MainNet'):
+                    self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='q')
+                # ----- build TargetNet -----
+                with tf.variable_scope('TargetNet'):
+                    # layer_h_s_ = tf.layers.dense(h_s_, 1024, activation=tf.nn.relu, kernel_initializer=tf.zeros_initializer, bias_initializer=tf.zeros_initializer, name='t2_l1')
+                    self.q_next = tf.layers.dense(h_s_, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='t2')
+                print("2-layer MLP, 1st layer is activated by relu", flush=True)
+            else:
+                print("error state_encoder")
+                exit(1)
         
         
         # ----- DQN-loss ----- 
@@ -375,9 +382,15 @@ class DQN_R(object):
         feed_dict[self.f_] = f_
         feed_dict[self.len_s] = batch_memory[:, -2]
         feed_dict[self.len_s_] = batch_memory[:, -1]
-        # ---------- learning & update ---------#
-        # learn in one batch
-        # print(feed_dict)
+        # # ---------- learning & update ---------#
+        # # learn in one batch
+        # print("a random number", np.random.randint(4096))
+        # print(states)
+        # print(self.sess.run(self.input_s, feed_dict=feed_dict).shape)
+        # # print(self.sess.run(self.input_f, feed_dict=feed_dict))
+        # print(self.sess.run(self.q_next, feed_dict=feed_dict))
+        # # print("a random number", np.random.randint(4096))
+        # exit(0)
         _, loss = self.sess.run([self.optimizer, self.loss], feed_dict=feed_dict)
         
         # learn in smaller mini-batch by using tf.data

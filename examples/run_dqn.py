@@ -15,6 +15,7 @@ from train import train
 from evaluation import evaluate, eval_yahoo_sinTurn, yahoo_eval_1, yahoo_eval_1_calu_itemset
 
 import tensorflow as tf
+# tf.compat.v1.disable_eager_execution()
 import random
 
 def _get_conf(conf_name):
@@ -76,8 +77,8 @@ def _logging_(basis_conf, params_conf):
 def run_dqn():
     conf = _get_conf('yahoo')
     # # simulated data: 
-    # conf['RATINGS'], item_vec = simulated_data(10, 20)
-    # conf["data.input.dataset"] = 'sim_u10_i20'
+    conf['RATINGS'], item_vec = simulated_data(10, 20)
+    conf["data.input.dataset"] = 'sim_u10_i20'
 
     # item_vec = conf["ITEM_VEC"]
     sofa = SOFAEnv(conf)
@@ -89,7 +90,7 @@ def run_dqn():
     config['STATE_MAXLENGTH'] = int(conf["episode_length"])
     config['ACTION_SPACE'] = action_space
 
-    config['SAVE_MODEL_FILE'] = 'newcode-' + conf["data.input.dataset"] + '_' + \
+    config['SAVE_MODEL_FILE'] = 'oldcode-' + conf["data.input.dataset"] + '_' + \
         conf["data.gen_model"] + '_' + conf["data.debiasing"] + '_' + \
         conf['mode'] + '_' + config["state_encoder"] + '_' + 'r-12_SmoothL1_' + 'nohuman' + "_seed" + conf["seed"]
 
@@ -98,11 +99,12 @@ def run_dqn():
     ## train process
     evalProcess = conf['evaluation']
     if evalProcess.lower() == 'false':
+        # train(conf, config, sofa)
         try:
             train(conf, config, sofa)
         except:
             print("Learning being interrupted. Start evalution.")
-    # else:
+    
     if conf["data.input.dataset"].lower() in ['yahoo', 'coat']:
         test_file = conf["data.input.path"] + conf["data.input.dataset"] + "_test.ascii"
         # eval_yahoo_sinTurn(conf, config, sofa, test_file)
@@ -141,7 +143,7 @@ def set_hparams():
     parser.add_argument('--debiasing', type=str)
     args = parser.parse_args()
     print("now the seed is", args.seed, flush=True)
-    np.random.seed(args.seed)
+    # np.random.seed(args.seed)
     return args
 
 if __name__ == "__main__":
