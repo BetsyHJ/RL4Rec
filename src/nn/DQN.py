@@ -6,7 +6,8 @@ Following https://www.zhihu.com/people/fuckyou-74/posts
 
 import sys
 # sys.path.append('./')
-from nn.state_encoder.state_encoder import MLP, GRU
+from nn.state_encoder.gru import GRU
+from nn.state_encoder.mlp import MLP
 
 import numpy as np
 import tensorflow as tf
@@ -105,98 +106,45 @@ class DQN_R(object):
             self.action_embeddings = tf.concat([self.action_embeddings, init_user_vec], axis=0)
         self.feedback_embeddings = tf.concat([self.feedback_embeddings, tf.constant(np.ones([1, self.action_dim]), dtype='float32')], axis=0)
 
-        newcode = True
-        # newcode = False
-        if newcode:
-            print("Use new code")
-            '''
-            Use state encoder class
-            '''
-            # --------- get the feedback embeddings [B L D]
-            self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, f)
-            self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, f_)
-            # --------- get the items embeddings [B L D]
-            self.input_s = tf.nn.embedding_lookup(self.action_embeddings, s)
-            self.input_s_ = tf.nn.embedding_lookup(self.action_embeddings, s_)
-            self.eee = self.input_s * self.input_f
-            config = {}
-            if self.state_encoder.lower() == 'mlp':
-                state_encoder = MLP
-                print("1-layer MLP, 1st layer is activated by relu")
-            elif self.state_encoder.lower() == 'gru':
-                state_encoder = GRU
-                config['rnn_state_dim'] = self.rnn_state_dim
-                print("1-layer GRU and 1-layer dense")
+        '''
+        Use state encoder class
+        '''
+        # --------- get the feedback embeddings [B L D]
+        self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, f)
+        self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, f_)
+        # --------- get the items embeddings [B L D]
+        self.input_s = tf.nn.embedding_lookup(self.action_embeddings, s)
+        self.input_s_ = tf.nn.embedding_lookup(self.action_embeddings, s_)
+        self.eee = self.input_s * self.input_f
+        config = {}
+        if self.state_encoder.lower() == 'mlp':
+            state_encoder = MLP
+            print("1-layer MLP, 1st layer is activated by relu")
+        elif self.state_encoder.lower() == 'gru':
+            state_encoder = GRU
+            config['rnn_state_dim'] = self.rnn_state_dim
+            print("1-layer GRU and 1-layer dense")
 
-            # #
-            # ----- build MainNet -----
-            with tf.variable_scope('MainNet'):
-                self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
-            # ----- build TargetNet -----
-            with tf.variable_scope('TargetNet'):
-                self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, name='t2')
+        # # Two networks, when learn_step_counter == 0, do replace to make initialization of two networks the same.
+        # ----- build MainNet -----
+        with tf.variable_scope('MainNet'):
+            self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
+        # ----- build TargetNet -----
+        with tf.variable_scope('TargetNet'):
+            self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, name='t2')
         
-        else:
-            print("Use old code")
-            # --------- get the feedback embeddings
-            self.input_f = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f, [-1]))
-            self.input_f_ = tf.nn.embedding_lookup(self.feedback_embeddings, tf.reshape(f_, [-1]))
-            # -------- be careful: here merge the state (items) with feedback_emb
-            self.input_s = tf.reshape(tf.nn.embedding_lookup(self.action_embeddings, tf.reshape(s, [-1])) * self.input_f, [-1, self.state_maxlength, self.action_dim]) #(None, d) -> (None, s_lengh, d)
-            self.input_s_ = tf.reshape(tf.nn.embedding_lookup(self.action_embeddings, tf.reshape(s_, [-1])) * self.input_f_, [-1, self.state_maxlength, self.action_dim]) #(None, d) -> (None, s_lengh, d)
-            self.eee = self.input_s
-            # # ********* here we use rnn, it can be MLP, CNN ....
-            if self.state_encoder.lower() == 'gru':
-                # w_init, b_init = tf.random_normal_initializer(seed=np.random.randint(4096)), tf.constant_initializer()
-                # ----- build MainNet -----
-                with tf.variable_scope('MainNet'):
-                    cell_main = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer())
-                    _, h_s = tf.nn.dynamic_rnn(cell_main, dtype=tf.float32, sequence_length=len_s, inputs=self.input_s)
-                    self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='q')
-                # ----- build TargetNet -----
-                with tf.variable_scope('TargetNet'):
-                    cell_target = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer())
-                    _, h_s_ = tf.nn.dynamic_rnn(cell_target, dtype=tf.float32, sequence_length=len_s_, inputs=self.input_s_)
-                    self.q_next = tf.layers.dense(h_s_, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='t2')
-
-            # ********* here we use multi-layer dense
-            elif self.state_encoder.lower() == 'mlp':
-                # w_init, b_init = tf.random_normal_initializer(seed=np.random.randint(4096)), tf.constant_initializer()
-                # before the code is h_s = tf.reduce_mean(self.input_s, axis=1)
-                h_s = tf.reduce_sum(self.input_s, axis=1) / tf.reshape(tf.cast(self.len_s, dtype=tf.float32), [-1, 1]) # (None, d)
-                h_s_ = tf.reduce_sum(self.input_s_, axis=1) / tf.reshape(tf.cast(self.len_s_, dtype=tf.float32), [-1, 1]) # (None, d)
-                # h_s = tf.contrib.layers.flatten(self.input_s)
-                # h_s_ = tf.contrib.layers.flatten(self.input_s_)
-                # ----- build MainNet -----
-                with tf.variable_scope('MainNet'):
-                    self.q_eval = tf.layers.dense(h_s, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='q')
-                # ----- build TargetNet -----
-                with tf.variable_scope('TargetNet'):
-                    # layer_h_s_ = tf.layers.dense(h_s_, 1024, activation=tf.nn.relu, kernel_initializer=tf.zeros_initializer, bias_initializer=tf.zeros_initializer, name='t2_l1')
-                    self.q_next = tf.layers.dense(h_s_, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name='t2')
-                print("2-layer MLP, 1st layer is activated by relu", flush=True)
-            else:
-                print("error state_encoder")
-                exit(1)
-        
-        
-        # ----- DQN-loss ----- 
+        # # ----- DQN-loss ----- 
         with tf.variable_scope('q_eval'):
             a_indices = tf.stack([tf.range(tf.shape(a)[0],dtype=tf.int32), a], axis=1)
             self.q_eval_s_a = tf.gather_nd(self.q_eval, a_indices)
         with tf.variable_scope('q_next'):
-            # end = tf.fill(tf.shape(len_s_), self.state_maxlength, name='zeros')
-            # done = tf.stop_gradient(tf.to_float(tf.equal(end, len_s_)))
-            # cumu_c = tf.reduce_sum(tf.to_float(f_), axis=-1)
-            # # external_rewards = tf.where(tf.less(cumu_c, 3.), tf.fill(tf.shape(cumu_c), -10.), tf.fill(tf.shape(cumu_c), 10.))
-            # external_rewards = tf.stop_gradient(done * (cumu_c * 1. )) #+ (self.state_maxlength - cumu_c) * (-1)))
             self.q_target = r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_') #* (1.-done) + self.gamma * external_rewards
             self.q_target = tf.stop_gradient(self.q_target)
         
         with tf.variable_scope('loss'):
-            # l2-loss
+            # # l2-loss
             # self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_s_a))
-            # smooth-l1-loss: https://blog.csdn.net/u014365862/article/details/79924201
+            # # smooth-l1-loss: https://blog.csdn.net/u014365862/article/details/79924201
             diff = self.q_target - self.q_eval_s_a
             abs_diff = tf.abs(diff)
             smoothL1_sign = tf.stop_gradient(tf.to_float(tf.less(abs_diff, 1.)))
@@ -278,14 +226,7 @@ class DQN_R(object):
         # print("index", indices_x, indices_y)
         # print("value", action_values)
 
-        ## random select
-        # actions_random = np.random.randint(self.action_space, size=(batch_size))
-        # repeat_actions = np.where((s - np.expand_dims(actions_random, axis=-1) == 0))
-        # while len(repeat_actions[0]) > 0:
-        #     actions_replace = np.random.randint(self.action_space, size=(batch_size))
-        #     actions_random[repeat_actions[0]] = actions_replace[repeat_actions[0]]
-        #     repeat_actions = np.where((s - np.expand_dims(actions_random, axis=-1) == 0))
-        # faster
+        # # random select
         select_p = np.random.uniform(size=(batch_size, self.action_space))
         # select_p[indices_x, indices_y] = -1.
         actions_random = np.argmax(select_p, axis=1)
@@ -297,23 +238,17 @@ class DQN_R(object):
         if (not self.with_userinit) and (len_s == 0):
             return actions_random
         
-        ### use policy
+        # # choose actions
         # --- normal way ----
         action_values = self.sess.run(self.q_eval, feed_dict={self.f:f, self.s:s, self.len_s:np.full((batch_size), len_s, dtype=np.int32)})
-        # # set the historical action very small value, deal with repeat items
+        # # human intervention: set the historical action very small value, deal with repeat items
         # replace_value = np.min(action_values) - 1.
         # action_values[indices_x, indices_y] = replace_value
         actions = np.argmax(action_values, axis=1)
         if greedy.lower() == 'true':
             return actions
         
-        # if np.isin(0, s - np.expand_dims(np.array(actions, dtype=np.int32), axis=-1)):
-        #     print('here1')
-        #     exit(0)
-        # elif np.isin(0, s - np.expand_dims(np.array(actions_random, dtype=np.int32), axis=-1)):
-        #     print('here2')
-        #     exit(0)
-        ## do \epsilon greedy
+        # # do \epsilon-greedy
         return np.where(np.random.uniform(size=(s.shape[0],))<self.epsilon, actions_random, actions)
 
 
@@ -345,9 +280,6 @@ class DQN_R(object):
                 score = action_values[i][itemLists[i]]
                 scores.append(score)
                 rerankOrder.append(np.flip(np.argsort(score)))
-            #     print("\nscore", score)
-            #     print("items, rerank : ", itemLists, rerankOrder)
-            # exit(1)
             return rerankOrder, scores
 
     def learn(self):
@@ -363,11 +295,6 @@ class DQN_R(object):
             sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
         # print(self.memory_counter, sample_index)
         batch_memory = self.memory[sample_index, :]
-        # deal with states with unfixed length
-        # states = tf.keras.preprocessing.sequence.pad_sequences(batch_memory[:, 0], \
-        #             maxlen=self.state_maxlength, padding='post', value=self.action_space)
-        # states_ = tf.keras.preprocessing.sequence.pad_sequences(batch_memory[:, 3], \
-        #             maxlen=self.state_maxlength, padding='post', value=self.action_space)
         states = np.array(batch_memory[:, :self.state_maxlength], dtype='int')
         states_ = np.array(batch_memory[:, self.state_maxlength:(self.state_maxlength*2)], dtype='int')
         f = np.array(batch_memory[:, (self.state_maxlength*2):(self.state_maxlength*3)], dtype='int')
@@ -384,25 +311,9 @@ class DQN_R(object):
         feed_dict[self.len_s_] = batch_memory[:, -1]
         # # ---------- learning & update ---------#
         # # learn in one batch
-        # print("a random number", np.random.randint(4096))
-        # print(states)
-        # print(self.sess.run(self.input_s, feed_dict=feed_dict).shape)
-        # # print(self.sess.run(self.input_f, feed_dict=feed_dict))
         # print(self.sess.run(self.q_next, feed_dict=feed_dict))
-        # # print("a random number", np.random.randint(4096))
-        # exit(0)
         _, loss = self.sess.run([self.optimizer, self.loss], feed_dict=feed_dict)
         
-        # learn in smaller mini-batch by using tf.data
-        # feed_dict[self.mini_batch] = 64
-        # self.sess.run(self.data_iter.initializer, feed_dict=feed_dict)
-        # epoch_size = int(round(self.batch_size / feed_dict[self.mini_batch]))
-        # loss = []
-        # for _ in range(epoch_size):
-        #     _, l = self.sess.run([self.optimizer, self.loss])
-        #     loss.append(l)
-        # loss = np.mean(loss)
-
         self.learn_step_counter += 1
         if self.learn_step_counter % self.lr_decay_step == 0:
             self.lr_decay()

@@ -77,8 +77,8 @@ def _logging_(basis_conf, params_conf):
 def run_dqn():
     conf = _get_conf('yahoo')
     # # simulated data: 
-    conf['RATINGS'], item_vec = simulated_data(10, 20)
-    conf["data.input.dataset"] = 'sim_u10_i20'
+    # conf['RATINGS'], item_vec = simulated_data(10, 20)
+    # conf["data.input.dataset"] = 'sim_u10_i20'
 
     # item_vec = conf["ITEM_VEC"]
     sofa = SOFAEnv(conf)
@@ -90,16 +90,16 @@ def run_dqn():
     config['STATE_MAXLENGTH'] = int(conf["episode_length"])
     config['ACTION_SPACE'] = action_space
 
-    config['SAVE_MODEL_FILE'] = 'oldcode-' + conf["data.input.dataset"] + '_' + \
-        conf["data.gen_model"] + '_' + conf["data.debiasing"] + '_' + \
-        conf['mode'] + '_' + config["state_encoder"] + '_' + 'r-12_SmoothL1_' + 'nohuman' + "_seed" + conf["seed"]
+    # config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + \
+    #     conf["data.gen_model"] + '_' + conf["data.debiasing"] + '_' + \
+    #     conf['mode'] + '_' + config["state_encoder"] + '_' + 'r-12_SmoothL1_' + 'nohuman' + "_seed" + conf["seed"]
+    config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + conf['mode'] + '_' + config["state_encoder"] + "_seed" + conf["seed"]
 
     _logging_(conf, config)
 
-    ## train process
+    # # train process
     evalProcess = conf['evaluation']
     if evalProcess.lower() == 'false':
-        # train(conf, config, sofa)
         try:
             train(conf, config, sofa)
         except:
@@ -143,7 +143,6 @@ def set_hparams():
     parser.add_argument('--debiasing', type=str)
     args = parser.parse_args()
     print("now the seed is", args.seed, flush=True)
-    # np.random.seed(args.seed)
     return args
 
 if __name__ == "__main__":
