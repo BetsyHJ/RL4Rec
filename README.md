@@ -23,6 +23,7 @@ $ python run_dqn.py
     - `mode`: default DQN.
     - `seed`: default 2010. Set random seed to achieve reproducibility.
     - `episode_length`: default 10. It means the max number of interaction turns.
+    - `evaluation`: default false. It means if we directly evaluate with the saved models.
 - `./conf/DQN.properties`
     - `state_encoder`: default GRU. The models of the state encoder include MLP and GRU for now. We will add CNN, Attention etc.
     - Others
