@@ -27,7 +27,7 @@ $ python run_dqn.py
     - `state_encoder`: default GRU. The models of the state encoder include MLP and GRU for now. We will add CNN, Attention etc.
     - Others
 
-![](DQN-parameters.PNG)
+![](DQN-parameters.png)
 
 ## Markov Decision Process (MDP)
 We will now describe how we model the recommendation task as an Markov Decision Process (MDP):
