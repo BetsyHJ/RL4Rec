@@ -8,6 +8,7 @@ import sys
 # sys.path.append('./')
 from nn.state_encoder.gru import GRU
 from nn.state_encoder.mlp import MLP
+from nn.state_encoder.attention import Attention
 
 import numpy as np
 import tensorflow as tf
@@ -119,11 +120,18 @@ class DQN_R(object):
         config = {}
         if self.state_encoder.lower() == 'mlp':
             state_encoder = MLP
-            print("1-layer MLP, 1st layer is activated by relu")
+            print("Mode MLP: 1-layer MLP, 1st layer is activated by relu")
         elif self.state_encoder.lower() == 'gru':
             state_encoder = GRU
             config['rnn_state_dim'] = self.rnn_state_dim
-            print("1-layer GRU and 1-layer dense")
+            print("Mode GRU: 1-layer GRU and 1-layer dense")
+        elif 'att' in self.state_encoder.lower():
+            state_encoder = Attention
+            config['rnn_state_dim'] = self.rnn_state_dim
+            config['unit'] = self.rnn_state_dim
+            assert config['unit'] == config['rnn_state_dim'] # since unit is the dim of W used to compute attention weights
+            print("Mode Attention: 1-layer GRU, attention layer and one output (dense) layer")
+
 
         # # Two networks, when learn_step_counter == 0, do replace to make initialization of two networks the same.
         # ----- build MainNet -----

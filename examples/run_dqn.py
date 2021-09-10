@@ -22,15 +22,6 @@ def _get_conf(conf_name):
     config = configparser.ConfigParser()
     config.read("../conf/"+conf_name+".properties")
     conf=dict(config.items("default"))
-    if ('seed' in conf) and (conf['seed'].lower() != 'none'):
-        seed = int(conf['seed'])
-        np.random.seed(seed)
-        tf.set_random_seed(seed)
-        random.seed(seed)
-    # # for multiple jobs in 
-    # args = set_hparams()
-    # conf["data.debiasing"] = args.debiasing
-    # conf["seed"] = str(args.seed)
 
     evalProcess = conf['evaluation']
     if evalProcess.lower() == 'false':
@@ -90,12 +81,38 @@ def run_dqn():
     config['STATE_MAXLENGTH'] = int(conf["episode_length"])
     config['ACTION_SPACE'] = action_space
 
+    # # for multiple jobs in 
+    args = set_hparams()
+    if args.state_encoder:
+        config["state_encoder"] = args.state_encoder
+    config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + conf['mode'] + '_' + config["state_encoder"]
+    if args.debiasing:
+        conf["data.debiasing"] = args.debiasing
+    if args.seed:
+        conf["seed"] = args.seed
+        config['SAVE_MODEL_FILE'] += "_seed%d" % args.seed
+    if args.action_dim:
+        config["ACTION_DIM"] = args.action_dim
+        config['SAVE_MODEL_FILE'] += "_acdim_%d" % args.action_dim
+    if args.rnn_state_dim:
+        config["RNN_STATE_DIM"] = args.rnn_state_dim
+        config['SAVE_MODEL_FILE'] += "_rnndim%d" % args.rnn_state_dim
+    assert conf["data.debiasing"] == 'ips'
+    
     # config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + \
     #     conf["data.gen_model"] + '_' + conf["data.debiasing"] + '_' + \
     #     conf['mode'] + '_' + config["state_encoder"] + '_' + 'r-12_SmoothL1_' + 'nohuman' + "_seed" + conf["seed"]
-    config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + conf['mode'] + '_' + config["state_encoder"] + "_seed" + conf["seed"]
-
+    # config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + conf['mode'] + '_' + config["state_encoder"] + "_seed" + conf["seed"]
+    
     _logging_(conf, config)
+    if ('seed' in conf) and (conf['seed'].lower() != 'none'):
+        seed = int(conf['seed'])
+        np.random.seed(seed)
+        tf.set_random_seed(seed)
+        random.seed(seed)
+        print("now the seed is", seed, flush=True)
+    else:
+        print("now the seed is None")
 
     # # train process
     evalProcess = conf['evaluation']
@@ -141,8 +158,10 @@ def set_hparams():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int)
     parser.add_argument('--debiasing', type=str)
+    parser.add_argument('--action_dim', type=int)
+    parser.add_argument('--rnn_state_dim', type=int)
+    parser.add_argument('--state_encoder', type=str)
     args = parser.parse_args()
-    print("now the seed is", args.seed, flush=True)
     return args
 
 if __name__ == "__main__":
