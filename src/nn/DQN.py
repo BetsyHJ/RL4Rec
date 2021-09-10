@@ -9,6 +9,7 @@ import sys
 from nn.state_encoder.gru import GRU
 from nn.state_encoder.mlp import MLP
 from nn.state_encoder.attention import Attention
+from nn.state_encoder.cnn import CNN
 
 import numpy as np
 import tensorflow as tf
@@ -60,8 +61,10 @@ class DQN_R(object):
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.sess.run(tf.global_variables_initializer())
         # tensorboard --logdir ./logs/ --host=127.0.0.1
-        # self.writer = tf.summary.FileWriter("log/logs/", self.sess.graph)
-        # exit(0)
+        self.writer = tf.summary.FileWriter("./logs/", self.sess.graph)
+        for var in tf.trainable_variables():
+            print(var.name, ':', self.sess.run(var).shape)
+        exit(1)
         self.saver = tf.train.Saver()
 
         # self.epsilon_delta = (self.epsilon - self.epsilon_min) / 50000.0
@@ -132,6 +135,11 @@ class DQN_R(object):
             assert config['unit'] == config['rnn_state_dim'] # since unit is the dim of W used to compute attention weights
             print("Mode Attention: 1-layer GRU, attention layer and one output (dense) layer")
 
+            print("1-layer GRU and 1-layer dense")
+        elif self.state_encoder.lower() == 'cnn':
+            state_encoder = CNN
+            config['rnn_state_dim'] = self.rnn_state_dim
+            print("3-layer CNN")
 
         # # Two networks, when learn_step_counter == 0, do replace to make initialization of two networks the same.
         # ----- build MainNet -----
