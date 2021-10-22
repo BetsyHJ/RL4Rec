@@ -9,9 +9,9 @@ import numpy as np
 import tensorflow as tf
 from nn.state_encoder.state_encoder import AbstractStateEncoder
 
-class attention(AbstractStateEncoder):
+class Attention(AbstractStateEncoder):
     def __init__(self, action_space, state_maxlength, seed=None, config=None):
-        super(attention, self).__init__(action_space, state_maxlength, seed=seed, config={'rnn_state_dim':128, 'units':128})
+        super(Attention, self).__init__(action_space, state_maxlength, seed=seed, config={'rnn_state_dim':128, 'units':128})
         self.rnn_state_dim = config['rnn_state_dim']
         units = config['rnn_state_dim']
         self.W1 = tf.keras.layers.Dense(units, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)))
@@ -37,4 +37,5 @@ class attention(AbstractStateEncoder):
         # output a fully connected layer
         output = tf.layers.dense(x, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
 
-        return output, attention_weights
+        # return output, attention_weights
+        return output

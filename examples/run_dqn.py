@@ -105,7 +105,7 @@ def run_dqn():
     # config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + conf['mode'] + '_' + config["state_encoder"] + "_seed" + conf["seed"]
     
     _logging_(conf, config)
-    if ('seed' in conf) and (conf['seed'].lower() != 'none'):
+    if ('seed' in conf) and (str(conf['seed']).lower() != 'none'):
         seed = int(conf['seed'])
         np.random.seed(seed)
         tf.set_random_seed(seed)
@@ -117,18 +117,19 @@ def run_dqn():
     # # train process
     evalProcess = conf['evaluation']
     if evalProcess.lower() == 'false':
-        try:
-            train(conf, config, sofa)
-        except:
-            print("Learning being interrupted. Start evalution.")
+        train(conf, config, sofa)
+        # try:
+        #     train(conf, config, sofa)
+        # except:
+        #     print("Learning being interrupted. Start evalution.")
     
     if conf["data.input.dataset"].lower() in ['yahoo', 'coat']:
         test_file = conf["data.input.path"] + conf["data.input.dataset"] + "_test.ascii"
         # eval_yahoo_sinTurn(conf, config, sofa, test_file)
-        yahoo_eval_1(conf, config, sofa, test_file)
+        # yahoo_eval_1(conf, config, sofa, test_file)
         # yahoo_eval_1_calu_itemset(conf, config, sofa, test_file)
         # # solution-2 with a pseudo GT
-        # evaluate(conf, config, sofa, test_file)
+        evaluate(conf, config, sofa, test_file)
     else:
         evaluate(conf, config, sofa)
 

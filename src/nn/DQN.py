@@ -61,10 +61,10 @@ class DQN_R(object):
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.sess.run(tf.global_variables_initializer())
         # tensorboard --logdir ./logs/ --host=127.0.0.1
-        self.writer = tf.summary.FileWriter("./logs/", self.sess.graph)
-        for var in tf.trainable_variables():
-            print(var.name, ':', self.sess.run(var).shape)
-        exit(1)
+        # self.writer = tf.summary.FileWriter("./logs/", self.sess.graph)
+        # for var in tf.trainable_variables():
+        #     print(var.name, ':', self.sess.run(var).shape)
+        # exit(1)
         self.saver = tf.train.Saver()
 
         # self.epsilon_delta = (self.epsilon - self.epsilon_min) / 50000.0
@@ -138,8 +138,8 @@ class DQN_R(object):
             print("1-layer GRU and 1-layer dense")
         elif self.state_encoder.lower() == 'cnn':
             state_encoder = CNN
-            config['rnn_state_dim'] = self.rnn_state_dim
-            print("3-layer CNN")
+            config['cnn_state_dim'] = self.rnn_state_dim
+            print("1-layer CNN")
 
         # # Two networks, when learn_step_counter == 0, do replace to make initialization of two networks the same.
         # ----- build MainNet -----

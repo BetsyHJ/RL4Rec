@@ -48,6 +48,9 @@ def train(conf, config, sofa):
     step = 0
     batch_size = 10 # 
     epoch = 3000
+    if conf["data.input.dataset"].lower() == 'yahoo':
+        batch_size = 50 # 50 for Yahoo
+        epoch = 1000
     trick1_happen = 0
     for epoch in range(epoch):
         np.random.shuffle(users)
