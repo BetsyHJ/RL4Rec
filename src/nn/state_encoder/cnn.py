@@ -107,6 +107,6 @@ class CNN(AbstractStateEncoder):
         # dense_2 = tf.keras.layers.Dense(128, activation=tf.nn.relu)(dense_1)
         # dense_3 = tf.keras.layers.Dense(128, activation=tf.nn.relu)(dense_2)
 
-        output = tf.keras.layers.Dense(self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)(dense_1)
+        output = tf.keras.layers.Dense(self.action_space, activation=self.activation, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)(dense_1)
         
         return output

@@ -2,6 +2,7 @@
 Attention-based state encoder
 Author: Thijs Rood
 Contact: thijs.rood@hotmail.com
+Modified by Jin Huang
 """
 
 
@@ -11,7 +12,7 @@ from nn.state_encoder.state_encoder import AbstractStateEncoder
 
 class Attention(AbstractStateEncoder):
     def __init__(self, action_space, state_maxlength, seed=None, config=None):
-        super(Attention, self).__init__(action_space, state_maxlength, seed=seed, config={'rnn_state_dim':128, 'units':128})
+        super(Attention, self).__init__(action_space, state_maxlength, seed=seed, config=config)
         self.rnn_state_dim = config['rnn_state_dim']
         units = config['rnn_state_dim']
         self.W1 = tf.keras.layers.Dense(units, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)))
@@ -26,16 +27,19 @@ class Attention(AbstractStateEncoder):
         score = tf.reduce_sum(score, axis=-1) # (B L)
 
         attention_weights = tf.nn.softmax(score) # (B L)
+        # # mask the weights for padding vectors, modified by Jin
+        mask = tf.sequence_mask(len_s, self.state_maxlength, dtype=tf.float32) # (B, L)
+        attention_weights = attention_weights * mask # (B, L), with padding 0
+        attention_weights = attention_weights / tf.reduce_sum(attention_weights, axis=-1, keepdims=True) # (B L)
 
         # compute the context vector
         context_vector = tf.expand_dims(attention_weights, -1) * h_s # (B L 1) * (B L D)
         context_vector = tf.reduce_sum(context_vector, axis=1) # (B D)
 
-        # simple concatenation
         x = tf.concat([context_vector, h_t], axis=-1)
 
         # output a fully connected layer
-        output = tf.layers.dense(x, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
+        output = tf.layers.dense(x, self.action_space, activation=self.activation, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
 
         # return output, attention_weights
         return output

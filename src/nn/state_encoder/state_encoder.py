@@ -6,6 +6,10 @@ class AbstractStateEncoder(tf.layers.Layer):
         super(AbstractStateEncoder, self).__init__()
         self.action_space = action_space
         self.state_maxlength = state_maxlength
+        # print("want to see", config)
+        # exit(0)
+        if 'activation' in config:
+            self.activation = config['activation']
         # self.seed = seed
 
     def build(self, input_shape):  # TensorShape of input when run call(), inference from inputs

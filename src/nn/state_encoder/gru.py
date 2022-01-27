@@ -11,5 +11,5 @@ class GRU(AbstractStateEncoder):
         input_state = input_s * input_f
         cell = tf.contrib.rnn.GRUCell(num_units=self.rnn_state_dim, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer())
         _, h_s = tf.nn.dynamic_rnn(cell, dtype=tf.float32, sequence_length=len_s, inputs=input_state)
-        output = tf.layers.dense(h_s, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
+        output = tf.layers.dense(h_s, self.action_space, activation=self.activation, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
         return output

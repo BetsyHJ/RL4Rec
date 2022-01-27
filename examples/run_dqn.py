@@ -97,8 +97,16 @@ def run_dqn():
     if args.rnn_state_dim:
         config["RNN_STATE_DIM"] = args.rnn_state_dim
         config['SAVE_MODEL_FILE'] += "_rnndim%d" % args.rnn_state_dim
+    if args.lr:
+        config["LEARNING_RATE"] = args.lr
+        config['SAVE_MODEL_FILE'] += "_lr%f" % args.lr
     assert conf["data.debiasing"] == 'ips'
     
+    config['activation'] = None
+    if config['state_encoder'].lower() in ['mlp']:
+        config['activation'] = 'relu' # 'relu'
+        config['SAVE_MODEL_FILE'] += '_' + config['activation']
+
     # config['SAVE_MODEL_FILE'] = conf["data.input.dataset"] + '_' + \
     #     conf["data.gen_model"] + '_' + conf["data.debiasing"] + '_' + \
     #     conf['mode'] + '_' + config["state_encoder"] + '_' + 'r-12_SmoothL1_' + 'nohuman' + "_seed" + conf["seed"]
@@ -162,6 +170,7 @@ def set_hparams():
     parser.add_argument('--action_dim', type=int)
     parser.add_argument('--rnn_state_dim', type=int)
     parser.add_argument('--state_encoder', type=str)
+    parser.add_argument('--lr', type=float)
     args = parser.parse_args()
     return args
 

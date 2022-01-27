@@ -9,7 +9,9 @@ import sys
 from nn.state_encoder.gru import GRU
 from nn.state_encoder.mlp import MLP
 from nn.state_encoder.attention import Attention
+from nn.state_encoder.attention_liu import Att_by_Liu
 from nn.state_encoder.cnn import CNN
+from nn.state_encoder.baselines import PLD, BOI
 
 import numpy as np
 import tensorflow as tf
@@ -41,6 +43,8 @@ class DQN_R(object):
         self.optimizer_name = config['OPTIMIZER']
         self.state_encoder = config["state_encoder"]
         self.num_reward_type = 2
+        if self.state_encoder.lower() not in ['pld', 'boi']:
+            self.activation = config['activation']
 
         self.save_model_file = 'DQN'
         if 'SAVE_MODEL_FILE' in config:
@@ -121,33 +125,49 @@ class DQN_R(object):
         self.input_s_ = tf.nn.embedding_lookup(self.action_embeddings, s_)
         self.eee = self.input_s * self.input_f
         config = {}
+        
+        if self.state_encoder.lower() not in ['pld', 'boi']:
+            config['activation'] = self.activation
         if self.state_encoder.lower() == 'mlp':
             state_encoder = MLP
-            print("Mode MLP: 1-layer MLP, 1st layer is activated by relu")
+            print("Mode MLP: 1-layer MLP with activation", config['activation'])
         elif self.state_encoder.lower() == 'gru':
             state_encoder = GRU
             config['rnn_state_dim'] = self.rnn_state_dim
             print("Mode GRU: 1-layer GRU and 1-layer dense")
-        elif 'att' in self.state_encoder.lower():
+        elif self.state_encoder.lower() == 'att':
             state_encoder = Attention
             config['rnn_state_dim'] = self.rnn_state_dim
             config['unit'] = self.rnn_state_dim
             assert config['unit'] == config['rnn_state_dim'] # since unit is the dim of W used to compute attention weights
             print("Mode Attention: 1-layer GRU, attention layer and one output (dense) layer")
-
-            print("1-layer GRU and 1-layer dense")
+        elif self.state_encoder.lower() == 'att_liu':
+            state_encoder = Att_by_Liu
+            print("Mode Att_Liu: Dense, attention layer and one output (dense) layer")
         elif self.state_encoder.lower() == 'cnn':
             state_encoder = CNN
             config['cnn_state_dim'] = self.rnn_state_dim
-            print("1-layer CNN")
+            print("Mode CNN: 1-layer CNN and one output (dense) layer")
+        elif self.state_encoder.lower() == 'pld':
+            state_encoder = PLD
+            print("Model PLD: one output layer")
+        elif self.state_encoder.lower() == 'boi':
+            state_encoder = PLD
+            print("Model BOI: one output layer")
 
         # # Two networks, when learn_step_counter == 0, do replace to make initialization of two networks the same.
         # ----- build MainNet -----
         with tf.variable_scope('MainNet'):
-            self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
+            if self.state_encoder.lower() in ['pld', 'boi']:
+                self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, s, name='q')
+            else:
+                self.q_eval = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s, self.input_f, self.len_s, name='q')
         # ----- build TargetNet -----
         with tf.variable_scope('TargetNet'):
-            self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, name='t2')
+            if self.state_encoder.lower() in ['pld', 'boi']:
+                self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, s_, name='t2')
+            else:
+                self.q_next = state_encoder(self.action_space, self.state_maxlength, config=config)(self.input_s_, self.input_f_, self.len_s_, name='t2')
         
         # # ----- DQN-loss ----- 
         with tf.variable_scope('q_eval'):

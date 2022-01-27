@@ -8,7 +8,12 @@ class MLP(AbstractStateEncoder):
 
     def call(self, input_s, input_f, len_s, name='net'):
         input_state = self._combine_item_feedback(input_s, input_f, len_s)
-        output = tf.layers.dense(input_state, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
+        output = tf.layers.dense(input_state, self.action_space, activation=self.activation, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
         return output
+
+    # def call(self, input_s, input_f, len_s, name='net'):
+    #     input_state = self._combine_item_feedback(input_s, input_f, len_s)
+    #     output = tf.layers.dense(input_state, self.action_space, kernel_initializer=tf.random_normal_initializer(seed=np.random.randint(4096)), bias_initializer = tf.constant_initializer(), name=name)
+    #     return output
 
 
