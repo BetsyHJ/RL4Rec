@@ -1,0 +1,42 @@
+--state_encoder PLD --action_dim 16
+--state_encoder PLD --action_dim 32
+--state_encoder PLD --action_dim 64
+--state_encoder BOI --action_dim 16
+--state_encoder BOI --action_dim 32
+--state_encoder BOI --action_dim 64
+--state_encoder MLP --action_dim 16
+--state_encoder MLP --action_dim 32
+--state_encoder MLP --action_dim 64
+--state_encoder GRU --action_dim 16 --rnn_state_dim 16
+--state_encoder GRU --action_dim 16 --rnn_state_dim 32
+--state_encoder GRU --action_dim 16 --rnn_state_dim 64
+--state_encoder GRU --action_dim 32 --rnn_state_dim 16
+--state_encoder GRU --action_dim 32 --rnn_state_dim 32
+--state_encoder GRU --action_dim 32 --rnn_state_dim 64
+--state_encoder GRU --action_dim 64 --rnn_state_dim 16
+--state_encoder GRU --action_dim 64 --rnn_state_dim 32
+--state_encoder GRU --action_dim 64 --rnn_state_dim 64
+--state_encoder Att --action_dim 16 --rnn_state_dim 16
+--state_encoder Att --action_dim 16 --rnn_state_dim 32
+--state_encoder Att --action_dim 16 --rnn_state_dim 64
+--state_encoder Att --action_dim 32 --rnn_state_dim 16
+--state_encoder Att --action_dim 32 --rnn_state_dim 32
+--state_encoder Att --action_dim 32 --rnn_state_dim 64
+--state_encoder Att --action_dim 64 --rnn_state_dim 16
+--state_encoder Att --action_dim 64 --rnn_state_dim 32
+--state_encoder Att --action_dim 64 --rnn_state_dim 64
+--state_encoder CNN --action_dim 16 --rnn_state_dim 16
+--state_encoder CNN --action_dim 16 --rnn_state_dim 32
+--state_encoder CNN --action_dim 16 --rnn_state_dim 64
+--state_encoder CNN --action_dim 32 --rnn_state_dim 16
+--state_encoder CNN --action_dim 32 --rnn_state_dim 32
+--state_encoder CNN --action_dim 32 --rnn_state_dim 64
+--state_encoder CNN --action_dim 64 --rnn_state_dim 16
+--state_encoder CNN --action_dim 64 --rnn_state_dim 32
+--state_encoder CNN --action_dim 64 --rnn_state_dim 64
+--state_encoder Att_Liu --action_dim 16
+--state_encoder Att_Liu --action_dim 32
+--state_encoder Att_Liu --action_dim 64
+--state_encoder PLD --action_dim 64
+--state_encoder BOI --action_dim 64
+--state_encoder MLP --action_dim 64

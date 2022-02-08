@@ -27,10 +27,10 @@ class Attention(AbstractStateEncoder):
         score = tf.reduce_sum(score, axis=-1) # (B L)
 
         attention_weights = tf.nn.softmax(score) # (B L)
-        # # mask the weights for padding vectors, modified by Jin
-        mask = tf.sequence_mask(len_s, self.state_maxlength, dtype=tf.float32) # (B, L)
-        attention_weights = attention_weights * mask # (B, L), with padding 0
-        attention_weights = attention_weights / tf.reduce_sum(attention_weights, axis=-1, keepdims=True) # (B L)
+        # # # mask the weights for padding vectors, modified by Jin
+        # mask = tf.sequence_mask(len_s, self.state_maxlength, dtype=tf.float32) # (B, L)
+        # attention_weights = attention_weights * mask # (B, L), with padding 0
+        # attention_weights = attention_weights / tf.reduce_sum(attention_weights, axis=-1, keepdims=True) # (B L)
 
         # compute the context vector
         context_vector = tf.expand_dims(attention_weights, -1) * h_s # (B L 1) * (B L D)

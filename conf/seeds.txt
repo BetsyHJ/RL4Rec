@@ -1,0 +1,10 @@
+--seed 2012
+--seed 2013
+--seed 2014
+--seed 2015
+--seed 2016
+--seed 2017
+--seed 2018
+--seed 2019
+--seed 2020
+--seed 2021

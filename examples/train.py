@@ -50,7 +50,7 @@ def train(conf, config, sofa):
     epoch = 3000
     if conf["data.input.dataset"].lower() == 'yahoo':
         batch_size = 50 # 50 for Yahoo
-        epoch = 1000
+        epoch = 800
     trick1_happen = 0
     for epoch in range(epoch):
         np.random.shuffle(users)
@@ -121,14 +121,14 @@ def train(conf, config, sofa):
     
 def plot_cumuReward(learnstep_cr, filename='line_plot.pdf', plot_data_file='line_plot.data'):
     np.savetxt(plot_data_file, np.array(learnstep_cr))
-    # print("plot save into file:%s" % filename )
-    plt.clf()
-    # fig = plt.figure(figuresize=4, 5)
-    learnstep_cr = np.array(learnstep_cr)
-    plt.plot(learnstep_cr[:, 0].astype('int'), learnstep_cr[:, 1].astype('float'))
-    plt.ylabel('Cumulative_Click')
-    plt.xlabel('training steps')
-    plt.savefig(filename)
-    # plt.show(fig)
-    plt.show(block=False)
-    plt.close()
+    # # print("plot save into file:%s" % filename )
+    # plt.clf()
+    # # fig = plt.figure(figuresize=4, 5)
+    # learnstep_cr = np.array(learnstep_cr)
+    # plt.plot(learnstep_cr[:, 0].astype('int'), learnstep_cr[:, 1].astype('float'))
+    # plt.ylabel('Cumulative_Click')
+    # plt.xlabel('training steps')
+    # plt.savefig(filename)
+    # # plt.show(fig)
+    # plt.show(block=False)
+    # plt.close()
