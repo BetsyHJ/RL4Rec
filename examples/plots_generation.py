@@ -186,7 +186,7 @@ df = pd.concat([df_att, df_cnn, df_gru, df_mlp, df_mlp_tanh, df_boi, df_pld, df_
 
 #%%
 plt.close()
-matplotlib.rcParams['figure.figsize'] = 5, 6
+matplotlib.rcParams['figure.figsize'] = 5, 5.5
 
 def draw1(df, hue_order=['mlp', 'cnn', 'gru', 'att', 'boi', 'pld', 'mlp_tanh'], names=['Avg', 'CNN', 'GRU', 'Attention', 'BOI', 'PLD', 'MLP'], filename='', ylim=(0.0, 3.1), yticks=[0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0], ax=None):
     # get colors
