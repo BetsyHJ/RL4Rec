@@ -9,7 +9,6 @@ import sys
 from nn.state_encoder.gru import GRU
 from nn.state_encoder.mlp import MLP
 from nn.state_encoder.attention import Attention
-from nn.state_encoder.attention_liu import Att_by_Liu
 from nn.state_encoder.cnn import CNN
 from nn.state_encoder.baselines import PLD, BOI
 
