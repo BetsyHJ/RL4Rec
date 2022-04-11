@@ -185,5 +185,17 @@ def set_hparams():
     return args
 
 if __name__ == "__main__":
+    if not os.path.isdir("./checkpoint_dir/"):
+        os.makedirs("./checkpoint_dir/")
+        print("*********** Creating the checkpoint_dir ***********")
+    if not os.path.isdir("./learning_curves/"):
+        os.makedirs("./learning_curves/")
+        print("*********** Creating the chlearning_curveseckpoint_dir ***********")
+    if not os.path.isdir("./result/"):
+        os.makedirs("./result/")
+        print("*********** Creating the result ***********")
+    if not os.path.isdir("./logs/"):
+        os.makedirs("./logs/")
+        print("*********** Creating the logs ***********")
     run_dqn()
     print("End. " + strftime("%Y-%m-%d %H:%M:%S", localtime(time())))
