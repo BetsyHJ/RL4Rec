@@ -2,15 +2,12 @@
 This repository contains the code used for the experiments in "State Encoders in Reinforcement Learning for Recommendation: A Reproducibility Study".
 
 ## Required packages
-You can install conda and then create Python 3.6 Conda environment. Run conda create -n RL4Rec python=3.6 to create the environment. Activate the environment by running conda activate RL4Rec. 
-Then try to install the required packages:
+You can install conda and then create Python 3.6 Conda environment with the required package:
 ```
-$ pip install -r requirements.txt
+$ conda env create -f ../environment.yml
 ```
-Or
-```
-$ conda install --yes --file requirements.txt
-```
+Activate the environment by running conda activate rl4rec. Recommend to run it in a Linux environment.
+
 ## Reproducing Experiments
 We compare seven state encoders in a DQN-based RL4Rec framework when evaluating in the debiased simulations of Yahoo! R3 dataset and the coat shopping dataset.
 
